@@ -1,0 +1,78 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+""" plugin description """
+
+from sqrl3.script import onprivmsg, onload, g_meta
+
+################
+
+@onprivmsg("rehash", "r", kingly=True)
+def regash(self, msg):
+    """ rehash: reloads the script without disconnecting """
+    from sqrl3.sqrl import rehash
+    msg.reply("rehashing!")
+    rehash("requested")
+
+@onprivmsg("load", kingly=True)
+def loload(self, msg):
+    """ load [name]: loads one script """
+    if self.loadscript(msg[1]): msg.reply("loaded: " + msg[1])
+    else: msg.reply("couldn't load " + msg[1])
+
+@onprivmsg("unload", block=True)
+def unloload(self, msg):
+    """ unload [name]: unloads one script """
+    if self.unloadscript("dummy"): msg.reply("unloaded: " + msg[1])
+    else: msg.reply("couldn't load " + msg[1])
+
+################
+
+@onprivmsg("list")
+def listcommands(self, msg, scripts):
+    """ list: lists commands """
+    l = {}
+    for script in scripts:
+        l.update(g_meta[script].commands)
+    msg.reply("usable commands: " + ", ".join(l.iterkeys()))
+
+@onprivmsg("help")
+def helpcommand(self, msg, scripts):
+    """ oh really? """
+    if len(msg) == 2:
+        for script in scripts:
+            if msg[1] in g_meta[script].commands:
+                msg.reply(g_meta[script].commands[msg[1]])
+                return
+    msg.action(u"didn't find {0!q}", msg[1])
+
+# @onprivmsg("hello", "hi", desc="SAYS HELLO TO YOU")
+# def hello(self, msg, prefix, sex="lol"):
+#     """ greets users """
+#     print "> hello"
+#     print prefix, sex
+
+# @onprivmsg("mute")
+# def halt(self, msg):
+#     """ fails hard """
+#     print "> mute"
+#     raise MuteMessage
+
+# @onprivmsg("rehash", "r")
+# def regash(self, msg):
+#     from sqrl3.sqrl import rehash
+#     msg.reply("rehashing!")
+#     rehash("requested")
+
+# @onprivmsg("raise")
+# def dummy0(self, msg, prefix, sex="lol"):
+#     """ lol raise """
+#     print "> raise"
+#     print 1 / 0
+
+# @onload
+# def load(self, network, porno=777):
+#     """ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! """
+#     print "LOADING NETWORK %s LOLWUT %s" % (network, porno)
+
+
