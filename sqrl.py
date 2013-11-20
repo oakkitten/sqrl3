@@ -151,10 +151,9 @@ def rehash(reason="?"):
         # those greenlets of the group which catch GreenletRehash will see SystemExit
         # other greenlets will see it as GreenletExit and will get killed naturally
         for greenlet in group.greenlets:
-            for greenlet in group.greenlets:
-                if greenlet.connected:
-                    argv.append(":".join((str(greenlet.net.sock.fileno()), greenlet.tag, mask_to_string(greenlet.me))))
-                greenlet.shutdown(GreenletRehash)
+            if greenlet.connected:
+                argv.append(":".join((str(greenlet.net.sock.fileno()), greenlet.tag, mask_to_string(greenlet.me))))
+            greenlet.shutdown(GreenletRehash)
         # os.execv is scheduled to run last
         # since atexit runs stuff in LIFO manner,
         # we create a function that replaces it
