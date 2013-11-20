@@ -3,7 +3,7 @@
 
 """ plugin description """
 
-from sqrl3.script import onprivmsg, onload, g_meta
+from sqrl3.script import onprivmsg, g_meta
 
 ################
 
@@ -45,34 +45,3 @@ def helpcommand(self, msg, scripts):
                 msg.reply(g_meta[script].commands[msg[0]])
                 return
     msg.action(u"didn't find {0!q}", msg[0])
-
-# @onprivmsg("hello", "hi", desc="SAYS HELLO TO YOU")
-# def hello(self, msg, prefix, sex="lol"):
-#     """ greets users """
-#     print "> hello"
-#     print prefix, sex
-
-# @onprivmsg("mute")
-# def halt(self, msg):
-#     """ fails hard """
-#     print "> mute"
-#     raise MuteMessage
-
-# @onprivmsg("rehash", "r")
-# def regash(self, msg):
-#     from sqrl3.sqrl import rehash
-#     msg.reply("rehashing!")
-#     rehash("requested")
-
-# @onprivmsg("raise")
-# def dummy0(self, msg, prefix, sex="lol"):
-#     """ lol raise """
-#     print "> raise"
-#     print 1 / 0
-
-# @onload
-# def load(self, network, porno=777):
-#     """ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! """
-#     print "LOADING NETWORK %s LOLWUT %s" % (network, porno)
-
-

@@ -85,8 +85,6 @@ class Scripto(object):
             adjustings config if necessary for given channel or network
             returns 0, 1, 2 as _loadscript
         """
-        # if chan is not None and not ischannel(chan):
-        #     chan = None
         status = self._loadscript(name)
         if status:
             if name not in conf.get("scripts", self.tag, chan):
@@ -99,8 +97,6 @@ class Scripto(object):
             adjustings config if necessary for given channel or network
             returns 1 if removed and 2 if it wasn't loaded
         """
-        # if chan is not None and not ischannel(chan):
-        #     chan = None
         if name in conf.get("scripts", self.tag, chan):
             conf.remove("scripts", name, self.tag, chan)
             return 1
@@ -287,158 +283,3 @@ def construct_wrapper(sfunc, tfunc):
                    tkwargs="".join(", getd('%s', tag, chan, default=_%s)" % (arg, i) for i, arg in enumerate(tkwargs)) if tkwargs else "")
         exec code in nms
         return wraps(tfunc)(nms["wrapper"])
-
-# def imp(name):
-#     """
-#         imports module by name and returns module object
-#         if there are no dots in module name, treats it as sqrl3 script
-#     """
-#     if "." not in name:
-#         name = "sqrl3.scripts." + name
-#     return import_module(name)
-
-
-# def loadmod(module):
-#     """
-#         for given module, return (e.g.):
-#         {Privmsg: {None: func1, "title": func2}, Notice: {"shutdown": func3},
-#          TextMessage: {None: func4}
-#          onload: func5}
-#     """
-#     structure = {}
-#     for name, func in inspect.getmembers(module, inspect.isfunction):
-#         if hasattr(func, "mtype"):
-#             node = structure.setdefault(func.mtype, {})
-#             if func.commands:                                       # this function has commands
-#                 for command in func.commands:                       # add the same function for them
-#                     assert command not in node, "command %s already handled by %s" % (command, node[command])
-#                     node[command] = func
-#             else:                                                   # there are no commands
-#                 assert None not in node, "type %s already handled by %s" % (func.mtype, node[None])
-#                 node[None] = func                                   # pass all messages of this type to function
-#         elif hasattr(func, "ttype"):
-#             structure[func.ttype] = func
-#     return structure
-
-# # do we have any funcs for this
-# # message type in this module?
-# try: funcs = handler[mtype]
-# except KeyError: continue
-# # we have. is a non-conditional handler?
-# try: func = funcs[None]
-# except KeyError: pass
-# else: self._onmessage(func, msg, None)
-# # is it a conditional handler?
-# if command is not None:
-#     try: func = funcs[command]
-#     except KeyError: pass
-#     else: self._onmessage(func, msg, chan)
-
-
-# nms = {"get": conf.get, "getdefault": conf.getdefault, "tfunc": tfunc}
-# nms.update({"_%s" % idx: de for (idx, de) in enumerate(tdefs)})
-
-# def construct_wrapper(sfunc, tfunc):
-#     targs, tkwargs, tdefs = get_args(tfunc)
-#     sargs, _, _ = get_args(sfunc)
-#     assert len(targs) >= len(sargs), "%s has not enough arguments" % tfunc
-#     targs = targs[len(sargs):]
-#     if not targs:
-#         return tfunc
-#     else:
-#         get, getdefault = conf.get, conf.getdefault
-#         code = "def wrapper({sargs}, chan=None):\n" \
-#                " tag = self.tag\n" \
-#                " tfunc({sargs}{targs}{tkwargs})".format(
-#                    sargs=", ".join(sargs),
-#                    targs="".join(", get('%s', tag, chan)" % arg for arg in targs),
-#                    tkwargs="".join(", getdefault('%s', tag, chan, default=tdefs[%s])" % (arg, idx) for idx, arg in enumerate(tkwargs)) if tkwargs else "")
-#         exec code in locals()
-#         return wraps(tfunc)(wrapper)
-
-# def command(mtype=None, *commands):
-#     """
-#         wrapper around commands
-#         retrieves settings for arguments and keyword arguments beyond net, msg
-#     """
-#     def irc_handler(func):
-#         # only positional arguments
-#         @wraps(func)
-#         def wrapper_a(net, msg, chan):
-#             tag = net.tag
-#             func(net, msg, *(conf.get(arg, tag, chan) for arg in args))
-
-#         # only keyword arguments
-#         @wraps(func)
-#         def wrapper_k(net, msg, chan):
-#             tag = net.tag
-#             func(net, msg, **{arg: conf.getdefault(arg, tag, chan, de) for arg, de in zip(kwargs, defs)})
-
-#         # both positional & keyword
-#         @wraps(func)
-#         def wrapper_ak(net, msg, chan):
-#             tag = net.tag
-#             func(net, msg,
-#                  *(conf.get(arg, tag, chan) for arg in args),
-#                  **{arg: conf.getdefault(arg, tag, chan, de) for arg, de in zip(kwargs, defs)}
-#                  )
-
-#         args, kwargs, defs = get_args(func)
-#         assert len(args) >= 2
-#         args = args[2:]
-#         if len(args) == 2:
-#             if not kwargs: f = func
-#             else: func = wrapper_k
-#         else:
-#             if not kwargs: f = wrapper_a
-#             else: f = wrapper_ak
-#         #  args -> positional arguments beyond net, msg (*args)
-#         #  kwargs -> keyword arguements
-#         #  defs -> ddfaults for keyword arguments
-#         f.mtype = mtype
-#         if commands: f.commands = commands
-#         return f
-#     if len(commands) == 1 and inspect.isfunction(commands[0]):
-#         func = commands[0]
-#         commands = None
-#         return irc_handler(func)
-#     else:
-#         return irc_handler
-
-# def trigger(ttype):
-#     """
-#         same as command, except for triggers such a
-#         onload / onunload / onconnected / etc
-#     """
-#     def trigger_handler(func):
-#         @wraps(func)
-#         def wrapper_a(net, *a):
-#             tag = net.tag
-#             func(net, *chain(a, (conf.get(arg, tag) for arg in args)))
-
-#         @wraps(func)
-#         def wrapper_k(net, *a, **ka):
-#             tag = net.tag
-#             func(net, *a, **{arg: conf.getdefault(arg, tag, default=de) for arg, de in zip(kwargs, defs)})
-
-#         @wraps(func)
-#         def wrapper_ak(net, *a, **ka):
-#             tag = net.tag
-#             func(net,
-#                  *chain(a, (conf.get(arg, tag) for arg in args)),
-#                  **{arg: conf.getdefault(arg, tag, default=de) for arg, de in zip(kwargs, defs)}
-#                  )
-
-#         args, kwargs, defs = get_args(func)
-#         source_argco = get_argcount(ttype)
-#         assert len(args) >= source_argco
-#         args = args[source_argco:]
-#         if not args:
-#             if not kwargs: f = func
-#             else: f = wrapper_k
-#         else:
-#             if not kwargs: f = wrapper_a
-#             else: f = wrapper_ak
-#         f.ttype = ttype
-#         return f
-#     return trigger_handler
