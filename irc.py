@@ -268,6 +268,7 @@ class Message(object):
             target = #chan or nick
             message = my cute message
             splitmsg = [my, cute, message]
+            tomyself = True, False
 
         join:
             target = #chan
@@ -404,7 +405,7 @@ class Numeric(Message):
 
 class TextMessage(Message):
     """
-        provides convenience reply funcion
+        provides convenience reply / ireply / action funcions
         note: it is going to fail if self._irc is not present!
     """
     def __init__(self, params, irc):
@@ -416,13 +417,16 @@ class TextMessage(Message):
             self.target, self.message = params[0], ""
         self.splitmsg = self.message.split()
         self._replyto = self.sender[0] if irc.me[0] == self.target else self.target
-        if type(self) == Privmsg and len(self.splitmsg) > 0 and \
-                self.splitmsg[0].lower().startswith("\x01action") and self.message[-1] == "\x01":           # PRIVMSG → ACTION
-            self.__class__ = Action
-            self.splitmsg = self.splitmsg[1:]
-            if self.splitmsg:
-                self.splitmsg[-1] = self.splitmsg[-1][:-1]
-            self.message = self.message[8:-1]
+        if type(self) == Privmsg:
+            if len(self.splitmsg) > 0 and self.splitmsg[0].lower().startswith("\x01action") and self.message[-1] == "\x01":           # PRIVMSG → ACTION
+                self.__class__ = Action
+                self.splitmsg = self.splitmsg[1:]
+                if self.splitmsg:
+                    self.splitmsg[-1] = self.splitmsg[-1][:-1]
+                self.message = self.message[8:-1]
+            else:
+                self.command = None         # if privmsg and not action: command is None
+        self.tomyself = self.target == irc.me[0]
 
     def reply(self, line, *args, **kwargs):
         self._irc.privmsg(self._replyto, self.nick + ": " + line, *args, **kwargs)

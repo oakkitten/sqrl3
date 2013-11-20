@@ -129,17 +129,24 @@ class Scripto(object):
         chan = getattr(msg, "target", None)
         if chan and not ischannel(chan):
             chan = None
-        # from current message, get "title from "♥title"
+        # from current message, get "title from "♥title"/etc
         # prefix is dependant on chan ↑
         # if there is no command, command = None
         command = None
         if isinstance(msg, TextMessage) and len(msg):
             first = msg[0]
-            if len(first) > 0:
-                if first[0] == conf.get("prefix", tag=self.tag, chan=chan):
-                    command = first[1:]
-                elif len(msg) > 1 and first[:-1] == self.me[0] and first[-1] in (",", ":"):
-                    command = msg[1]
+            if msg.tomyself:
+                # "cmd hello" in private
+                command = msg.command = first
+                msg.splitmsg = msg.splitmsg[1:]
+            elif first[0] == conf.get("prefix", tag=self.tag, chan=chan):
+                # "♥cmd hello" in #chan
+                command = msg.command = first[1:]
+                msg.splitmsg = msg.splitmsg[1:]
+            elif len(msg) > 1 and first[:-1] == self.me[0] and first[-1] in (",", ":"):
+                # "bot: hello" in #chan
+                command = msg.command = msg[1]
+                msg.splitmsg = msg.splitmsg[2:]
         # at this point, chan is "#chan" or None,
         # and command is "title" or None
         for handler in self._get_handlers(chan):

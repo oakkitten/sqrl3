@@ -17,14 +17,14 @@ def regash(self, msg):
 @onprivmsg("load", kingly=True)
 def loload(self, msg):
     """ load [name]: loads one script """
-    if self.loadscript(msg[1]): msg.reply("loaded: " + msg[1])
-    else: msg.reply("couldn't load " + msg[1])
+    if self.loadscript(msg[0]): msg.reply("loaded: " + msg[0])
+    else: msg.reply("couldn't load " + msg[0])
 
 @onprivmsg("unload", block=True)
 def unloload(self, msg):
     """ unload [name]: unloads one script """
-    if self.unloadscript("dummy"): msg.reply("unloaded: " + msg[1])
-    else: msg.reply("couldn't load " + msg[1])
+    if self.unloadscript("dummy"): msg.reply("unloaded: " + msg[0])
+    else: msg.reply("couldn't load " + msg[0])
 
 ################
 
@@ -39,12 +39,12 @@ def listcommands(self, msg, scripts):
 @onprivmsg("help")
 def helpcommand(self, msg, scripts):
     """ oh really? """
-    if len(msg) == 2:
+    if len(msg):
         for script in scripts:
-            if msg[1] in g_meta[script].commands:
-                msg.reply(g_meta[script].commands[msg[1]])
+            if msg[0] in g_meta[script].commands:
+                msg.reply(g_meta[script].commands[msg[0]])
                 return
-    msg.action(u"didn't find {0!q}", msg[1])
+    msg.action(u"didn't find {0!q}", msg[0])
 
 # @onprivmsg("hello", "hi", desc="SAYS HELLO TO YOU")
 # def hello(self, msg, prefix, sex="lol"):
