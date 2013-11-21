@@ -7,7 +7,7 @@ from sqrl3.script import onprivmsg, g_meta
 
 ################
 
-@onprivmsg("rehash", "r", kingly=True)
+@onprivmsg("rehash", "r", kingly="go away")
 def regash(self, msg):
     """ rehash: reloads the script without disconnecting """
     from sqrl3.sqrl import rehash
@@ -15,13 +15,13 @@ def regash(self, msg):
     rehash("requested")
 
 @onprivmsg("load", kingly=True)
-def loload(self, msg):
+def load(self, msg):
     """ load [name]: loads one script """
     if self.loadscript(msg[0]): msg.reply("loaded: " + msg[0])
     else: msg.reply("couldn't load " + msg[0])
 
-@onprivmsg("unload", block=True)
-def unloload(self, msg):
+@onprivmsg("unload", block=True, kingly="")
+def loload(self, msg):
     """ unload [name]: unloads one script """
     if self.unloadscript("dummy"): msg.reply("unloaded: " + msg[0])
     else: msg.reply("couldn't load " + msg[0])

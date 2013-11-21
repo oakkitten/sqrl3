@@ -169,9 +169,10 @@ class Scripto(object):
                 self.logger.log(OTHER, "muting message")
                 msg.reply = lambda *args, **kwargs: None
             except Exception as e: self.onexception(e, unexpected=True)
-        if func.kingly:
-            if not msg.frommaster:
-                return
+        if func.kingly is not None and not msg.frommaster:
+            if func.kingly is True: msg.reply("who do you think you are?")
+            elif func.kingly != "": msg.reply(func.kingly)
+            return
         if func.block:
             protected()
         else:
