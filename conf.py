@@ -38,17 +38,18 @@ DEFAULT = {
             "nickservpassword": None,
             "realname": u"i'm a cute li'l bot! say “-help” to me",
             "chans": {},
-            "scripts": ["users", "seen", "com", "version", "wik", "title", "choice", "dic", "ex"],
+            "scripts": ["test"],
             "master": "[^@]+@unaffiliated/squirrel",
             "encoding": "utf-8",
-            "mute": False
+            "mute": False,
+            "prefix": "-"
         },
         "myfreenode": {
             "network": "freenode",
             "password": ":myfreenodelogin myfreenodepass",
             "nickservpassword": "myfreenodepass",
             "chans": {
-                "##chan123": {"scripts": ["users", "ex"]},
+                "##chan123": {"scripts": [""]},
                 "##chan456": {"mute": True}
             }
         }
