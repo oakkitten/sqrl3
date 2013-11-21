@@ -37,10 +37,6 @@ def mask_to_string(m):
         mask += "@" + host
     return mask
 
-def wild_match(where, what):
-    return fnmatch(where, what)
-#from fnmatch import fnmatch as wild_match
-
 ################################################################
 
 def get_args(func):

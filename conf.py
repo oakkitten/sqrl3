@@ -39,7 +39,7 @@ DEFAULT = {
             "realname": u"i'm a cute li'l bot! say “-help” to me",
             "chans": {},
             "scripts": ["users", "seen", "com", "version", "wik", "title", "choice", "dic", "ex"],
-            "masters": ["*!*@unaffiliated/squirrel"],
+            "master": "[^@]+@unaffiliated/squirrel",
             "encoding": "utf-8",
             "mute": False
         },

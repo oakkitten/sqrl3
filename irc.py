@@ -9,7 +9,8 @@ from gevent import Greenlet, sleep, GreenletExit
 from gevent.pool import Group
 from network import Network
 from constants import GreenletRehash, ConnectionFailed, MessageMalformed, IN, OUT, OTHER, IN_PRIVMSG, IN_ACTION, OUT_PRIVMSG, OUT_ACTION, OUT_NOTICE
-from utils import CuteFormatter, wild_match, string_to_mask, mask_to_string
+from utils import CuteFormatter, string_to_mask, mask_to_string
+import re
 import conf
 import logging
 from copy import copy
@@ -166,14 +167,6 @@ class Irc(Greenlet):
     def joinchan(self, chan):
         self.send(u"JOIN " + chan)
 
-    ############################################################################################### other
-
-    def ismaster(self, sender):
-        for mask in self.masters:
-            if wild_match(sender, mask):
-                return True
-        return False
-
     ############################################################################################### replace me
 
     def onconnect(self, server):
@@ -237,7 +230,7 @@ class Irc(Greenlet):
     def onsentaction(self, target, text):
         self.logger.log(OUT_ACTION, "%s | * %s %s", target, self.me[0], text)
 
-for setting in ["encoding", "network", "nick", "username", "password", "nickservpassword", "realname", "chans", "masters"]:
+for setting in ["encoding", "network", "nick", "username", "password", "nickservpassword", "realname", "chans", "master"]:
     setattr(Irc, setting, property((lambda setting: lambda self: conf.get(setting, self.tag))(setting)))
 setattr(Irc, "servers", property(lambda self: conf.getservers(self.tag)))
 
@@ -377,7 +370,7 @@ class Message(object):
         # this is helpful
         self.fromhuman = len(self.sender) == 3
         self.frommyself = self.fromhuman and self.nick == irc.me[0]
-        self.frommaster = self.fromhuman and irc.ismaster(mask_to_string(self.sender))
+        self.frommaster = self.fromhuman and re.match(irc.master, mask_to_string(self.sender))
 
     def __getitem__(self, key):
         if type(key) == int:
