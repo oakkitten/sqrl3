@@ -370,7 +370,15 @@ class Message(object):
         # this is helpful
         self.fromhuman = len(self.sender) == 3
         self.frommyself = self.fromhuman and self.nick == irc.me[0]
-        self.frommaster = self.fromhuman and re.match(irc.master, mask_to_string(self.sender))
+
+    # also this
+    @property
+    def frommaster(self):
+        try:
+            return self._frommaster
+        except AttributeError:
+            self._frommaster = self.fromhuman and re.match(self._irc.master, mask_to_string(self.sender))
+            return self._frommaster
 
     def __getitem__(self, key):
         if type(key) == int:
