@@ -7,7 +7,7 @@ import conf
 from gevent import GreenletExit
 from utils import ischannel, get_args, first_line
 from irc import Irc, Privmsg, Notice, Action, TextMessage, Message
-from constants import MuteMessage, OTHER
+from constants import MuteMessage, HaltMessage, OTHER
 import inspect
 from functools import wraps, partial
 from importlib import import_module
@@ -145,16 +145,19 @@ class Scripto(object):
                 msg.splitmsg = msg.splitmsg[2:]
         # at this point, chan is "#chan" or None,
         # and command is "title" or None
-        for handler in self._get_handlers(chan):
-            for mtype in reversed(msg.__class__.__mro__[:-1]):
-                # for each script, and then
-                # for each message type, do:
-                # @onprivmsg / @onnotice
-                if mtype in handler:
-                    self._onmessage(handler[mtype], msg, chan=None)
-            # @onprivmsg("title")
-            if type(msg) is Privmsg and command in handler:
-                self._onmessage(handler[command], msg, chan)
+        try:
+            for handler in self._get_handlers(chan):
+                for mtype in reversed(msg.__class__.__mro__[:-1]):
+                    # for each script, and then
+                    # for each message type, do:
+                    # @onprivmsg / @onnotice
+                    if mtype in handler:
+                        self._onmessage(handler[mtype], msg, chan=None)
+                # @onprivmsg("title")
+                if type(msg) is Privmsg and command in handler:
+                    self._onmessage(handler[command], msg, chan)
+        except HaltMessage:
+            return
 
     def _onmessage(self, func, msg, chan):
         """
@@ -164,12 +167,17 @@ class Scripto(object):
         """
         def protected():
             try: func(self, msg)
-            except GreenletExit: return
-            except MuteMessage:
+            except GreenletExit: return                                     # if the function returned GreenletExit, return
+            except MuteMessage:                                             # if it's a MuteMessage, destoy msg's reply/ireply/action
                 self.logger.log(OTHER, "muting message")
-                msg.reply = lambda *args, **kwargs: None
-            except Exception as e: self.onexception(e, unexpected=True)
-        if func.kingly is not None and not msg.frommaster:
+                msg.mute()
+            except HaltMessage: raise                                       # if it's a HaltMessage, raise so that onmessage can catch it. not that if block=False, this has no effect
+            except Exception as e:
+                self.onexception(e, unexpected=True)
+                if func.onex is not False:
+                    if func.onex is True: msg.action("failed with {0.__class__.__name__}: {0}", e)
+                    else: msg.action(func.onex, e)
+        if func.kingly is not False and not msg.frommaster:
             if func.kingly is True: msg.reply("who do you think you are?")
             elif func.kingly != "": msg.reply(func.kingly)
             return
@@ -232,9 +240,11 @@ def command(mtype, *commands, **settings):
         f = construct_wrapper(Irc.onmessage, func)                  # all source functions have the same arguments
         f.mtype, f.block, f.kingly = mtype, block, kingly
         f.commands = commands if commands else None
+        f.onex = onex if commands else False
         return f
-    block = settings["block"] if "block" in settings else None
+    block = settings["block"] if "block" in settings else False
     kingly = settings["kingly"] if "kingly" in settings else False
+    onex = settings["onex"] if "onex" in settings else True
     if len(commands) == 1 and inspect.isfunction(commands[0]):      # if the wrapper was written as @onprivmsg
         func, commands = commands[0], None
         return irc_handler(func)

@@ -438,6 +438,9 @@ class TextMessage(Message):
     def action(self, line, *args, **kwargs):
         self._irc.action(self._replyto, line, *args, **kwargs)
 
+    def mute(self):
+        self.reply = self.ireply = self.action = lambda *a, **ka: None
+
 class Privmsg(TextMessage):
     pass
 class Notice(TextMessage):
