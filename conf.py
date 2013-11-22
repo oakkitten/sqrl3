@@ -78,8 +78,8 @@ def read(filename):
             raise ConfigDoesNotExist
         else:
             raise
-    except AssertionError:
-        raise ConfigMalformed
+    except (AssertionError, TypeError, ValueError, OverflowError) as e:
+        raise ConfigMalformed(e)
 
 ##########################################################################################
 
@@ -91,8 +91,8 @@ def write(filename):
     try:
         with codecs.open(expanduser(filename), "w", "utf-8") as f:
             json.dump(_config, f, ensure_ascii=False, indent=4)
-    except (TypeError, ValueError, OverflowError):
-        raise ConfigMalformed
+    except (TypeError, ValueError, OverflowError) as e:
+        raise ConfigMalformed(e)
 
 
 ##########################################################################################
