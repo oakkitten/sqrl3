@@ -7,5 +7,5 @@ from sqrl3.script import onprivmsg
 
 @onprivmsg("dummy")
 def privmsg(self, msg, prefix, sex="lol"):
-    """ dummy dummy DUMMY """
-    print "> dummy"
+    """ dummy dummy dummy dummy dummy dummy dummy dummy """
+    msg.reply("dummy dymmy dummy!!!")
