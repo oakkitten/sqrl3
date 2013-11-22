@@ -48,3 +48,8 @@ def helpcommand(self, msg, scripts):
                 msg.reply(g_meta[script].commands[msg[0]])
                 return
         msg.action(u"didn't find `{0}`", msg[0])
+
+@onprivmsg("source")
+def source(self, msg):
+    """ prints source url """
+    msg.reply("https://github.com/oakkitten/sqrl3")
