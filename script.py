@@ -6,7 +6,7 @@
 import conf
 from gevent import GreenletExit
 from utils import ischannel, get_args, first_line
-from irc import Irc, Privmsg, Notice, Action, TextMessage, Message
+from irc import Irc, Privmsg, Notice, Action, TextMessage, Message, Numeric
 from constants import MuteMessage, HaltMessage, OTHER
 import inspect
 from functools import wraps, partial
@@ -35,6 +35,22 @@ class Scripto(object):
         self.logger.log(OTHER, "imported: [%s]" % ", ".join(
             [name for name in scripts if self._loadscript(name) == 2]
         ))
+
+    ################################################################## S P A W N
+
+    def spawn(self, func, *args, **kwargs):
+        """
+            launch a function as a gevent thread
+            it's launched inside a try/else closure
+            well, that's useful for printing exception, but not much otherwise
+        """
+        def protected():
+            try: func(*args, **kwargs)
+            except GreenletExit: return
+            except Exception as e: self.onexception(e, unexpected=True)
+        self.group.spawn(protected)
+
+    ################################################################## L O A D / U N L O A D
 
     def _loadscript(self, name):
         """
@@ -102,35 +118,26 @@ class Scripto(object):
             return 1
         return 0
 
-    ################################################################## S P A W N
+    # def reloadscript(self, name):
+    #     if name in g_scripts:
+    #         del g_scripts[name], g_meta[name]
 
-    def spawn(self, func, *args, **kwargs):
-        """
-            launch a function as a gevent thread
-            it's launched inside a try/else closure
-            well, that's useful for printing exception, but not much otherwise
-        """
-        def protected():
-            try: func(*args, **kwargs)
-            except GreenletExit: return
-            except Exception as e: self.onexception(e, unexpected=True)
-        self.group.spawn(protected)
+    #     else:
+    #         return 0
 
     ################################################################## S U B C L A S S I N G
 
     def onmessage(self, msg):
         Irc.onmessage(self, msg)
-        # from current message, get channel info
-        # if there is no channel, chan = None
+        # chan = message's channel or None
         chan = getattr(msg, "target", None)
         if chan and not ischannel(chan):
             chan = None
         # get a list of handlers
         handlers = list(self._get_handlers(chan))
         iscommand = lambda word: any(word in handler for handler in handlers)
-        # from current message, get "title from "♥title"/etc
-        # prefix is dependant on chan ↑
-        # if there is no command, command = None
+        # command = "title" for Privmsgs with "♥title" / "bot: title" / pm "title"
+        # command = 123 for Numerics
         command = None
         if type(msg) is Privmsg and len(msg):
             first = msg[0]
@@ -149,18 +156,17 @@ class Scripto(object):
                     # "bot: hello" in #chan
                     command = msg.command = msg[1]
                     msg.splitmsg = msg.splitmsg[2:]
-        # at this point, chan is "#chan" or None,
-        # and command is "title" or None
+        elif type(msg) is Numeric:
+            command = msg.num
         try:
             for handler in handlers:
                 for mtype in reversed(msg.__class__.__mro__[:-1]):
-                    # for each script, and then
-                    # for each message type, do:
+                    # for each script, and then for each message type, do:
                     # @onprivmsg / @onnotice
                     if mtype in handler:
                         self._onmessage(handler[mtype], msg, chan=None)
                 # for each script, do:
-                # @onprivmsg("title")
+                # @onprivmsg("title") / @onnumeric(123)
                 if command and command in handler:
                     self._onmessage(handler[command], msg, chan)
         except HaltMessage:
@@ -174,21 +180,21 @@ class Scripto(object):
         """
         def protected():
             try: func(self, msg)
-            except GreenletExit: return                                     # if the function returned GreenletExit, return
-            except MuteMessage:                                             # if it's a MuteMessage, destoy msg's reply/ireply/action
+            except GreenletExit: return                             # if the function returned GreenletExit, return
+            except HaltMessage: raise                               # if it's a HaltMessage, raise so that onmessage can catch it. note that if block=False, this has no effect
+            except MuteMessage:                                     # if it's a MuteMessage, destoy msg's reply/ireply/action
                 self.logger.log(OTHER, "muting message")
                 msg.mute()
-            except HaltMessage: raise                                       # if it's a HaltMessage, raise so that onmessage can catch it. not that if block=False, this has no effect
-            except Exception as e:
+            except Exception as e:                                  # if it's an unexpected exception, print "Exception: data". if onex==False, no effect
                 self.onexception(e, unexpected=True)
                 if func.onex is not False:
                     if func.onex is True: msg.action("failed with {0.__class__.__name__}: {0}", e)
                     else: msg.action(func.onex, e)
-        if func.kingly is not False and not msg.frommaster:
+        if func.kingly is not False and not msg.frommaster:         # if a kingly command is called by a peasant, print bewilderment. if kingly=="", no effect
             if func.kingly is True: msg.reply("who do you think you are?")
             elif func.kingly != "": msg.reply(func.kingly)
             return
-        if func.block:
+        if func.block:                                              # if function is not blocking, it will be run after all the scheduling, else right now
             protected()
         else:
             self.group.spawn(protected)
@@ -240,18 +246,20 @@ def command(mtype, *commands, **settings):
         wrapper around commands
         retrieves settings for arguments and keyword arguments beyond net, msg
         special keyword arguments:
-            block: execute immediatly (non-threadedly)
-            desc: description string
+            block=False: execute immediately (non-threadedly).
+                can be True or False
+            kingly=False: execute only if sender is master. send error reply when sender is not.
+                can be False (not kingly), True (default reply), "string" (send this) or "" (don't send anything)
+            onex: send error reply when unexpected exception happened.
+                =True for Privmsgs with commands and =False with messages without them
+                can be False (don't send), True (default reply), "string" (send this, is formatted with one positional argument - the exception)
     """
     def irc_handler(func):
         f = construct_wrapper(Irc.onmessage, func)                  # all source functions have the same arguments
-        f.mtype, f.block, f.kingly = mtype, block, kingly
+        f.mtype, f.block, f.kingly = mtype, settings.get("block", False), settings.get("kingly", False)
         f.commands = commands if commands else None
-        f.onex = onex if commands else False
+        f.onex = settings.get("onex", True) if mtype is Privmsg and commands else False
         return f
-    block = settings["block"] if "block" in settings else False
-    kingly = settings["kingly"] if "kingly" in settings else False
-    onex = settings["onex"] if "onex" in settings else True
     if len(commands) == 1 and inspect.isfunction(commands[0]):      # if the wrapper was written as @onprivmsg
         func, commands = commands[0], None
         return irc_handler(func)
@@ -263,6 +271,7 @@ onnotice = partial(command, Notice)
 onaction = partial(command, Action)
 ontextmessage = partial(command, TextMessage)
 onmessage = partial(command, Message)
+onnumeric = partial(command, Numeric)
 
 ######################################################################
 

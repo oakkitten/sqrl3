@@ -356,10 +356,10 @@ class Message(object):
                 self.params = params
         else:                                                                   # ALL THE OTHER COMMANDS
             # fail if not enough parameters
-            if type(self) not in (Message, Quit, Numeric, Account, Part, Join):
+            if type(self) not in (Message, Quit, Numeric, Account, Part, Join, Nick):
                 if len(params) < 2:
                     raise MessageMalformed(line)
-            elif type(self) in (Part, Join):
+            elif type(self) in (Part, Join, Nick):
                 if len(params) < 1:
                     raise MessageMalformed(line)
             # parse known commands
