@@ -430,7 +430,9 @@ class TextMessage(Message):
         self.tomyself = self.target == irc.me[0]
 
     def reply(self, line, *args, **kwargs):
-        self._irc.privmsg(self._replyto, self.nick + ": " + line, *args, **kwargs)
+        if not self.tomyself:
+            line = self.nick + ": " + line
+        self._irc.privmsg(self._replyto, line, *args, **kwargs)
 
     def ireply(self, line, *args, **kwargs):
         self._irc.privmsg(self._replyto, line, *args, **kwargs)

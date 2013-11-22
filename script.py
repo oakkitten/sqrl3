@@ -125,36 +125,43 @@ class Scripto(object):
         chan = getattr(msg, "target", None)
         if chan and not ischannel(chan):
             chan = None
+        # get a list of handlers
+        handlers = list(self._get_handlers(chan))
+        iscommand = lambda word: any(word in handler for handler in handlers)
         # from current message, get "title from "♥title"/etc
         # prefix is dependant on chan ↑
         # if there is no command, command = None
         command = None
-        if isinstance(msg, TextMessage) and len(msg):
+        if type(msg) is Privmsg and len(msg):
             first = msg[0]
             if msg.tomyself:
-                # "cmd hello" in private
-                command = msg.command = first
-                msg.splitmsg = msg.splitmsg[1:]
+                if iscommand(first):
+                    # "cmd hello" in private
+                    command = msg.command = first
+                    msg.splitmsg = msg.splitmsg[1:]
             elif first[0] == conf.get("prefix", tag=self.tag, chan=chan):
-                # "♥cmd hello" in #chan
-                command = msg.command = first[1:]
-                msg.splitmsg = msg.splitmsg[1:]
+                if iscommand(first[1:]):
+                    # "♥cmd hello" in #chan
+                    command = msg.command = first[1:]
+                    msg.splitmsg = msg.splitmsg[1:]
             elif len(msg) > 1 and first[:-1] == self.me[0] and first[-1] in (",", ":"):
-                # "bot: hello" in #chan
-                command = msg.command = msg[1]
-                msg.splitmsg = msg.splitmsg[2:]
+                if iscommand(msg[1]):
+                    # "bot: hello" in #chan
+                    command = msg.command = msg[1]
+                    msg.splitmsg = msg.splitmsg[2:]
         # at this point, chan is "#chan" or None,
         # and command is "title" or None
         try:
-            for handler in self._get_handlers(chan):
+            for handler in handlers:
                 for mtype in reversed(msg.__class__.__mro__[:-1]):
                     # for each script, and then
                     # for each message type, do:
                     # @onprivmsg / @onnotice
                     if mtype in handler:
                         self._onmessage(handler[mtype], msg, chan=None)
+                # for each script, do:
                 # @onprivmsg("title")
-                if type(msg) is Privmsg and command in handler:
+                if command and command in handler:
                     self._onmessage(handler[command], msg, chan)
         except HaltMessage:
             return

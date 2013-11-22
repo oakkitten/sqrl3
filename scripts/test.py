@@ -45,3 +45,8 @@ def helpcommand(self, msg, scripts):
                 msg.reply(g_meta[script].commands[msg[0]])
                 return
     msg.action(u"didn't find {0!q}", msg[0])
+
+@onprivmsg
+def talk(self, msg, talkative=True):
+    if talkative and not msg.command and not msg.tomyself and len(msg) and msg[0][:-1] == self.me[0]:
+        msg.reply("bla bla bla")
