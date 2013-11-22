@@ -14,6 +14,11 @@ def rehash(self, msg):
     msg.reply("rehashing!")
     rehash("requested")
 
+@onprivmsg("reload", kingly=True)
+def reload(self, msg):
+    """ reload [name]: reloads one script. a hack. do not use """
+    msg.reply("result: {0}", self.reloadscript(msg[0]))
+
 @onprivmsg("load", kingly=True)
 def load(self, msg):
     """ load [name]: loads one script """

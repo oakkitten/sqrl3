@@ -9,6 +9,7 @@ from utils import ischannel, get_args, first_line
 from irc import Irc, Privmsg, Notice, Action, TextMessage, Message, Numeric
 from constants import MuteMessage, HaltMessage, OTHER
 import inspect
+import sys
 from functools import wraps, partial
 from importlib import import_module
 from collections import namedtuple
@@ -118,12 +119,15 @@ class Scripto(object):
             return 1
         return 0
 
-    # def reloadscript(self, name):
-    #     if name in g_scripts:
-    #         del g_scripts[name], g_meta[name]
-
-    #     else:
-    #         return 0
+    def reloadscript(self, name):
+        """
+            relad script
+            THIS IS A HACK! YOU DON'T RELOAD MODULES IN PYTHON! USE ONLY FOR TESTING PURPOSES!
+            returns 2 on success, raises on fail
+        """
+        del g_scripts[name], g_meta[name]
+        reload(sys.modules["sqrl3.scripts." + name])
+        return self._loadscript(name)
 
     ################################################################## S U B C L A S S I N G
 
