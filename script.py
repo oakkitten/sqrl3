@@ -106,6 +106,10 @@ class Scripto(object):
         if status:
             if name not in conf.get("scripts", self.tag, chan):
                 conf.append("scripts", name, self.tag, chan)
+        if status:
+            try: func = g_scripts[name][Irc.onload]
+            except KeyError: pass
+            else: self._runtrigger(func)
         return status
 
     def unloadscript(self, name, chan=None):
@@ -115,6 +119,9 @@ class Scripto(object):
             returns 1 if removed and 2 if it wasn't loaded
         """
         if name in conf.get("scripts", self.tag, chan):
+            try: func = g_scripts[name][Irc.onunload]
+            except KeyError: pass
+            else: self._runtrigger(func)
             conf.remove("scripts", name, self.tag, chan)
             return 1
         return 0
@@ -226,8 +233,11 @@ class Scripto(object):
         for handler in self._get_handlers(None):
             try: func = handler[ttype]
             except KeyError: continue
-            try: func(self, *args, **kwargs)
-            except Exception as e: self.onexception(e, unexpected=True)
+            self._runtrigger(func, *args, **kwargs)
+
+    def _runtrigger(self, func, *args, **kwargs):
+        try: func(self, *args, **kwargs)
+        except Exception as e: self.onexception(e, unexpected=True)
 
     ##################################################################
 
