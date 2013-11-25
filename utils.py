@@ -63,9 +63,9 @@ from string import Formatter
 class CuteFormatter(Formatter):
     """
         adds to the Formatter's syntax stuff like:
-            {0:R} - truncate text from the right, if needed, replacing the end with …
+            {:R} - truncate text from the right, if needed, replacing the end with …
             {1:15M} - same, except text will not exceed 15 bytes and will be chopped in the middle
-            {0!q:5R} - in addition to truncating, quote text (inside the quotes).
+            {url!q:5R} - in addition to truncating, quote text (inside the quotes).
                        there's poor man's detection of Russian and Engish, too
         the necessity to cut stuff is determined by itilializers:
             maxbytes - the maximum bytes that formatter can output (can output less then maxbytes due to stripping)
@@ -84,15 +84,16 @@ class CuteFormatter(Formatter):
 
     def vformat(self, format_string, args, kwargs):
         maxbytes, encoding, dots8, dots8len = self.maxbytes, self.encoding, self.dots8, self.dots8len
-        try:
+        if "shortenby" in kwargs:
             maxbytes -= kwargs["shortenby"]
-        except:
-            pass
-        result8, leftovers = [], []
+        result8, leftovers, lastauto = [], [], 0
         for literal_text, field_name, format_spec, conversion in self.parse(format_string):
             if literal_text:
                 result8.append(literal_text.encode(encoding))
             if field_name is not None:
+                if field_name == "":
+                    field_name = str(lastauto)
+                    lastauto += 1
                 obj, arg_used = self.get_field(field_name, args, kwargs)
                 if len(format_spec) > 0 and format_spec[-1] in ("R", "M"):          # |_ is this {field} R/maximum stuff?
                     try:
