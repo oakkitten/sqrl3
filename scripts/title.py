@@ -7,15 +7,13 @@ from lxml import html, etree
 from sqrl3.constants import BotException
 import re
 from bs4 import UnicodeDammit
-import gevent.monkey
-import gevent
+from gevent import Group
 import urllib2
 
 ############################################################ triggers
 
 @onload
 def load(self):
-    gevent.monkey.patch_all()
     self.chans_urls = {}
     self.chans_processors = {}
 
@@ -63,7 +61,7 @@ def autotitle(self, msg, announce_title=True):
 
 class Processor(object):
     def __init__(self):
-        self.group = gevent.pool.Group()
+        self.group = Group()
         self.greenlets = []
 
     def spawn(self, func, *args, **kwargs):
