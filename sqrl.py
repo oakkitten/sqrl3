@@ -23,6 +23,7 @@ def main():
     try:
         from gevent.pool import Group
         from gevent import signal
+        import gevent.monkey
     except ImportError:
         print "this application requires gevent\n"
         raise
@@ -88,6 +89,11 @@ def main():
     signal(3, shutdown, "SIGQUIT")
     signal(15, shutdown, "SIGTERM")
 
+    ########################################################################### monkey monkey monkey
+
+    gevent.monkey.patch_socket()
+    gevent.monkey.patch_ssl()
+
     ########################################################################### get file descriptors
 
     fds, mes = {}, {}
@@ -104,8 +110,7 @@ def main():
 
     group = Group()
     for tag in conf.getconnections():
-        if tag != "default":
-            group.start(Irc(tag, fds.get(tag, None), mes.get(tag, None)))
+        group.start(Irc(tag, fds.get(tag, None), mes.get(tag, None)))
     group.join()
 
     ########################################################################### this should get displayed

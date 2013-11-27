@@ -7,7 +7,7 @@ import conf
 from gevent import GreenletExit
 from utils import ischannel, get_args, first_line
 from irc import Irc, Privmsg, Notice, Action, TextMessage, Message, Numeric
-from constants import MuteMessage, HaltMessage, OTHER
+from constants import MuteMessage, HaltMessage, OTHER, BotException
 import inspect
 import sys
 from functools import wraps, partial
@@ -197,7 +197,7 @@ class Scripto(object):
                 self.logger.log(OTHER, "muting message")
                 msg.mute()
             except Exception as e:                                  # if it's an unexpected exception, print "Exception: data". if onex==False, no effect
-                self.onexception(e, unexpected=True)
+                self.onexception(e, unexpected=not isinstance(e, BotException))
                 if func.onex is not False:
                     if func.onex is True: msg.action("failed with {0.__class__.__name__}: {0}", e)
                     else: msg.action(func.onex, e)

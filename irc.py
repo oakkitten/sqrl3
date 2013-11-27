@@ -192,9 +192,9 @@ class Irc(Greenlet):
     def onexception(self, e, unexpected=False):
         """ called when any bot's internal exception occurs (the exception gets handled) """
         if unexpected:
-            self.logger.exception(str(e))
+            self.logger.exception(unicode(e))
         else:
-            self.logger.error(str(e))
+            self.logger.error(unicode(e))
 
     ###
 
