@@ -17,3 +17,7 @@ def whois(self, msg):
 @onnumeric(312)
 def n372(self, msg):
     print u"====================== ♥"
+
+@onprivmsg("longmessage")
+def longmessage(self, msg):
+    msg.reply(u"lolwut there goes long message: {!q:R}", "".join(u"%sоче нь дли нн ый %sсоо бще ние " % (x, x) for x in range(50)))

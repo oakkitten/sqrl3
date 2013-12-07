@@ -3,7 +3,7 @@
 
 """ plugin description """
 
-from sqrl3.script import onprivmsg, g_meta
+from sqrl3.script import onprivmsg, onload, onunload, g_meta
 
 ############################################################ admin
 
@@ -41,7 +41,7 @@ def listcommands(self, msg, scripts):
     l = {}
     for script in scripts:
         l.update(g_meta[script].commands)
-    msg.reply("usable commands: " + ", ".join(l.iterkeys()))
+    msg.reply("usable commands: " + ", ".join(key for key in l.iterkeys() if isinstance(key, basestring)))
 
 @onprivmsg("help")
 def helpcommand(self, msg, scripts):
@@ -58,3 +58,31 @@ def helpcommand(self, msg, scripts):
 def source(self, msg):
     """ prints source url """
     msg.reply("https://github.com/oakkitten/sqrl3")
+
+############################################################ more
+
+@onprivmsg("more")
+def more(self, msg):
+    """ prints continuation of the previous message, if any """
+    target = msg._replyto
+    if target in self.channels_more and self.channels_more[target]:
+        msg.ireply(u"…{:R}", self.channels_more[target])
+    else:
+        msg.reply("no more!")
+
+@onload
+def onload(self):
+    # patch self.privmsg
+    def privmsg_more(target, *args, **kwargs):
+        self.privmsg_original(target, *args, **kwargs)
+        self.channels_more[target] = self.formatter.more
+    self.channels_more = {}
+    self.privmsg_original = self.privmsg
+    self.privmsg = privmsg_more
+
+@onunload
+def onunload(self):
+    # unpatch self.privmsg
+    self.privmsg = self.privmsg_original
+    del self.privmsg_original
+    del self.channels_more

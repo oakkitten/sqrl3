@@ -7,7 +7,7 @@ from lxml import html, etree
 from sqrl3.constants import BotException
 import re
 from bs4 import UnicodeDammit
-from gevent import Group
+from gevent.pool import Group
 import urllib2
 
 ############################################################ triggers
@@ -26,7 +26,7 @@ def cmdtitle(self, msg):
     else:
         url = self.chans_urls[msg._replyto]
         res = title(url)
-        msg.reply(u"{:30M}: " + res.longtemplate, url, *res.longargs)
+        msg.reply(u"{:30m}: " + res.longtemplate, url, *res.longargs)
 
 @onprivmsg
 def autotitle(self, msg, announce_title=True):
@@ -141,7 +141,7 @@ class Title(object):
         elif title.lower() in url.lower(): raise MeaninglessTitle("title text in contained within the url")
         self.shortargs = self.longargs = (title,)
 
-    shorttemplate = longtemplate = "{!q:M}"
+    shorttemplate = longtemplate = "{!q:m}"
 
 
 # http://www.youtube.com/watch?v=y71vHIdv5IM
@@ -167,8 +167,8 @@ class Youtube(object):
         try: self.longargs = (title, duration, rating, viewcount, clean(first(".//media:description").text.splitlines()[0]))
         except: self.longtemplate, self.longargs = self.shorttemplate, self.shortargs
 
-    shorttemplate = "{!q:M} ({}, {}, {})"
-    longtemplate = "{!q:M} ({}, {}, {}): {:250R}"
+    shorttemplate = "{!q:m} ({}, {}, {})"
+    longtemplate = "{!q:m} ({}, {}, {}): {:250R}"
 
 def s_to_ms(s):
     m, s = divmod(s, 60)
