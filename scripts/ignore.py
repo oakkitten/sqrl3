@@ -3,7 +3,7 @@
 
 """ plugin description """
 
-from sqrl3.script import onprivmsg, onload, onunload, HaltMessage
+from sqrl3.script import onprivmsg, onload, HaltMessage
 from collections import defaultdict
 from gevent import spawn_later
 
@@ -13,14 +13,14 @@ from gevent import spawn_later
 def load(self):
     self.ignore = defaultdict(int)
 
-@onprivmsg(block=True)
+@onprivmsg(block=True, priority=20)
 def ignore(self, msg):
     # if the message is a bot command,
     # increase the number of commands by sender
     # track sender by host
     if msg.command:
         if self.ignore[msg.host] < 0:
-            raise HaltMessage
+            raise HaltMessage("ignored")
         else:
             if self.ignore[msg.host] > 5 - 1:
                 # turn ignore on
@@ -30,7 +30,7 @@ def ignore(self, msg):
                 msg.action("turns down the volume of {} a bit", msg.nick)
                 self.ignore[msg.host] = -1
                 self.group.add(spawn_later(60 * 5, reset_counter))
-                raise HaltMessage
+                raise HaltMessage("ignoring messages for %s" % (60 * 5))
             else:
                 # increase counter
                 # schedule removing

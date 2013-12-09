@@ -38,7 +38,9 @@ DEFAULT = {
             "nickservpassword": None,
             "realname": u"i'm a cute li'l bot! say “-help” to me",
             "chans": {},
-            "scripts": ["utils"],
+            "scripts": [
+                "utils", "ignore"
+            ],
             "master": "[^@]+@unaffiliated/squirrel",
             "encoding": "utf-8",
             "mute": False,

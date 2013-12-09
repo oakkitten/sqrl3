@@ -169,18 +169,23 @@ class Scripto(object):
                     msg.splitmsg = msg.splitmsg[2:]
         elif type(msg) is Numeric:
             command = msg.num
+        # assemble the list of functions that are to be run
+        # together with their arguments
+        funcs = []
+        for handler in handlers:
+            for mtype in reversed(msg.__class__.__mro__[:-1]):
+                if mtype in handler:
+                    funcs.append((handler[mtype], None))
+            if command and command in handler:
+                funcs.append((handler[command], chan))
+        # sort functions according to their priority
+        # and launch them
+        funcs.sort(key=lambda tu: tu[0].priority)
         try:
-            for handler in handlers:
-                for mtype in reversed(msg.__class__.__mro__[:-1]):
-                    # for each script, and then for each message type, do:
-                    # @onprivmsg / @onnotice
-                    if mtype in handler:
-                        self._onmessage(handler[mtype], msg, chan=None)
-                # for each script, do:
-                # @onprivmsg("title") / @onnumeric(123)
-                if command and command in handler:
-                    self._onmessage(handler[command], msg, chan)
-        except HaltMessage:
+            for func, chan in funcs:
+                self._onmessage(func, msg, chan)
+        except HaltMessage as e:
+            self.onexception(e)
             return
 
     def _onmessage(self, func, msg, chan):
@@ -267,18 +272,20 @@ def command(mtype, *commands, **settings):
             onex: send error reply when unexpected exception happened.
                 =True for Privmsgs with commands and =False with messages without them
                 can be False (don't send), True (default reply), "string" (send this, is formatted with one positional argument - the exception)
+            priority: functions with lower priority are run first
+                =1200 for Privmsgs with commands and =1000
     """
     def irc_handler(func):
         f = construct_wrapper(Irc.onmessage, func)                  # all source functions have the same arguments
         f.mtype, f.block, f.kingly = mtype, settings.get("block", False), settings.get("kingly", False)
         f.commands = commands if commands else None
         f.onex = settings.get("onex", True) if mtype is Privmsg and commands else False
+        f.priority = settings.get("priority", 1200) if mtype is Privmsg and commands else settings.get("priority", 1000)
         return f
-    if len(commands) == 1 and inspect.isfunction(commands[0]):      # if the wrapper was written as @onprivmsg
+    if len(commands) == 1 and callable(commands[0]):                # if the wrapper was written as @onprivmsg
         func, commands = commands[0], None
         return irc_handler(func)
-    else:                                                           # if it was written as @onprivmsg() / @onprivmsg("...", ...)
-        return irc_handler
+    return irc_handler
 
 onprivmsg = partial(command, Privmsg)
 onnotice = partial(command, Notice)
@@ -289,7 +296,7 @@ onnumeric = partial(command, Numeric)
 
 ######################################################################
 
-def trigger(ttype):
+def trigger(ttype, *funcs, **settings):
     """
         wrapper for triggers such as onload / onunload / onconnected / etc
         retreives setting for arguments and keywords beyond those of source function
@@ -297,13 +304,16 @@ def trigger(ttype):
     def trigger_handler(func):
         f = construct_wrapper(ttype, func)
         f.ttype = ttype
+        f.priority = settings.get("priority", 1000)
         return f
+    if len(funcs) == 1 and callable(funcs[0]):
+        return trigger_handler(funcs[0])
     return trigger_handler
 
-onload = trigger(Irc.onload)
-onunload = trigger(Irc.onunload)
-onconnected = trigger(Irc.onconnected)
-ondisconnect = trigger(Irc.ondisconnect)
+onload = partial(trigger, Irc.onload)
+onunload = partial(trigger, Irc.onunload)
+onconnected = partial(trigger, Irc.onconnected)
+ondisconnect = partial(trigger, Irc.ondisconnect)
 
 ######################################################################
 
