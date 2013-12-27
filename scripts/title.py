@@ -138,7 +138,7 @@ class Title(object):
         title = clean(title)
 
         if title == "imgur: the simple image sharer": raise MeaninglessTitle("who needs the default imgur title?")
-        elif title.lower() in url.lower(): raise MeaninglessTitle("title text in contained within the url")
+        elif title.lower() in url.lower(): raise MeaninglessTitle("title text is contained within the url")
         self.shortargs = self.longargs = (title,)
 
     shorttemplate = longtemplate = "{!q:m}"
