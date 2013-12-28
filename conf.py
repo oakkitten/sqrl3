@@ -44,7 +44,8 @@ DEFAULT = {
             "master": "[^@]+@unaffiliated/squirrel",
             "encoding": "utf-8",
             "mute": False,
-            "prefix": "-"
+            "prefix": "-",
+            "lang": "en"
         },
         "myfreenode": {
             "network": "freenode",
@@ -52,7 +53,7 @@ DEFAULT = {
             "nickservpassword": "myfreenodepass",
             "chans": {
                 "##chan123": {"scripts": [""]},
-                "##chan456": {"mute": True}
+                "##chan456": {"lang": "ru"}
             }
         }
     }

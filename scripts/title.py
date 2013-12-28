@@ -17,7 +17,7 @@ def load(self):
     self.chans_urls = {}
     self.chans_processors = {}
 
-@onprivmsg("title", onex=u"couldn't fetch the title: {0}")
+@onprivmsg("title", onex=u"couldn't fetch the title: {!t}")
 def cmdtitle(self, msg):
     """ title [url]: return url for a given string or the last mentioned url (and additional data for youtube) """
     if len(msg):

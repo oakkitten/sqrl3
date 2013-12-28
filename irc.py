@@ -150,17 +150,18 @@ class Irc(Greenlet):
             self.connected = False
 
     def notice(self, target, line, *args, **kwargs):
-        line = self.formatter.format(line, *args, shortenby=(9 + len(target.encode(self.encoding))), **kwargs)
+        line = self.formatter.format(line, *args, shortenby=(9 + len(target.encode(self.encoding))), lang=conf.getdefault("lang", self.tag, target, "en"), **kwargs)
         self.send(u"NOTICE " + target + " :" + line, False)
         self.onsentnotice(target, line)
 
-    def privmsg(self, target, line, *args, **kwargs):
-        line = self.formatter.format(line, *args, shortenby=(10 + len(target.encode(self.encoding))), **kwargs)
-        self.send(u"PRIVMSG " + target + " :" + line, False)
+    def privmsg(self, target, line, nick, *args, **kwargs):
+        shortenby = len(target.encode(self.encoding)) + (12 + len(nick.encode(self.encoding)) if nick else 10)
+        line = self.formatter.format(line, *args, shortenby=shortenby, lang=conf.getdefault("lang", self.tag, target, "en"), **kwargs)
+        self.send(u"PRIVMSG " + target + (" :" + nick + ": " if nick else " :") + line, False)
         self.onsentprivmsg(target, line)
 
     def action(self, target, line, *args, **kwargs):
-        line = self.formatter.format(line, *args, shortenby=(19 + len(target.encode(self.encoding))), **kwargs)
+        line = self.formatter.format(line, *args, shortenby=(19 + len(target.encode(self.encoding))), lang=conf.getdefault("lang", self.tag, target, "en"), **kwargs)
         self.send(u"PRIVMSG " + target + u" :\x01ACTION " + line + u"\x01", False)
         self.onsentaction(target, line)
 
@@ -430,12 +431,10 @@ class TextMessage(Message):
         self.tomyself = self.target == irc.me[0]
 
     def reply(self, line, *args, **kwargs):
-        if not self.tomyself:
-            line = self.nick + ": " + line
-        self._irc.privmsg(self._replyto, line, *args, **kwargs)
+        self._irc.privmsg(self._replyto, line, None if self.tomyself else self.nick, *args, **kwargs)
 
     def ireply(self, line, *args, **kwargs):
-        self._irc.privmsg(self._replyto, line, *args, **kwargs)
+        self._irc.privmsg(self._replyto, line, None, *args, **kwargs)
 
     def action(self, line, *args, **kwargs):
         self._irc.action(self._replyto, line, *args, **kwargs)

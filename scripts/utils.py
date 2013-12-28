@@ -17,21 +17,21 @@ def rehash(self, msg):
 @onprivmsg("reload", kingly=True)
 def reload(self, msg):
     """ reload [name]: reloads one script. a hack. do not use """
-    msg.reply("result: {0}", self.reloadscript(msg[0]))
+    msg.reply("result: {}", self.reloadscript(msg[0]))
 
 @onprivmsg("load", kingly=True)
 def load(self, msg):
     """ load [name]: loads one script """
     if not len(msg): msg.reply("usage: load name")
-    elif self.loadscript(msg[0]): msg.reply("loaded: `{0}`", msg[0])
-    else: msg.reply("couldn't load `{0}`", msg[0])
+    elif self.loadscript(msg[0]): msg.action("loaded `{}`", msg[0])
+    else: msg.action("couldn't load `{}`", msg[0])
 
 @onprivmsg("unload", block=True, kingly=True)
 def unload(self, msg):
     """ unload [name]: unloads one script """
     if not len(msg): msg.reply("usage: unload name")
-    elif self.unloadscript(msg[0]): msg.reply("unloaded: `{0}`", msg[0])
-    else: msg.reply("couldn't load `{0}`", msg[0])
+    elif self.unloadscript(msg[0]): msg.action("unloaded `{}`", msg[0])
+    else: msg.action("couldn't unload `{}`", msg[0])
 
 ############################################################ help
 
@@ -41,7 +41,7 @@ def listcommands(self, msg, scripts):
     l = {}
     for script in scripts:
         l.update(g_meta[script].commands)
-    msg.reply("usable commands: " + ", ".join(key for key in l.iterkeys() if isinstance(key, basestring)))
+    msg.reply("usable commands: {}", ", ".join(key for key in l.iterkeys() if isinstance(key, basestring)))
 
 @onprivmsg("help")
 def helpcommand(self, msg, scripts):
@@ -52,18 +52,18 @@ def helpcommand(self, msg, scripts):
             if msg[0] in g_meta[script].commands:
                 msg.reply(g_meta[script].commands[msg[0]])
                 return
-        msg.action(u"didn't find `{0}`", msg[0])
+        msg.action(u"didn't find `{}`", msg[0])
 
 @onprivmsg("source")
 def source(self, msg):
-    """ prints source url """
+    """ source: prints source url """
     msg.reply("https://github.com/oakkitten/sqrl3")
 
 ############################################################ more
 
 @onprivmsg("more")
 def more(self, msg):
-    """ prints continuation of the previous message, if any """
+    """ more: prints continuation of the previous message, if any """
     target = msg._replyto
     if target in self.channels_more and self.channels_more[target]:
         msg.ireply(u"…{:R}", self.channels_more[target])
