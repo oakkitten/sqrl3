@@ -20,13 +20,9 @@ def main():
     ########################################################################### import stuff
 
     import platform, argparse, logging
-    try:
-        from gevent.pool import Group
-        from gevent import signal
-        import gevent.monkey
-    except ImportError:
-        print "this application requires gevent\n"
-        raise
+    from gevent.pool import Group
+    from gevent import signal
+    import gevent.monkey
     from sqrl3 import conf, irc, script
 
     def description(author="sqrrl"):
