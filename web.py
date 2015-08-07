@@ -12,20 +12,61 @@ __all__ = "re_http", "opener", "opener_en", "opener_ru", "clean"
 ############################################################ re
 
 str_http = ur"""
-    (?:^|\s|\()              # preceded by start of the string, a space or a (
-        (
-            (?:https?://)?   # http:// (optional)
-            [\w\d\.-]+       # www.mail
-            \.               # .
-            (?:              # рф/com/museum
-                \w{2}
-                |com|org|edu|gov|int|mil|net|biz|pro|tel|xxx
-                |arpa|asia|info|name|aero|coop|jobs|post
-                |museum|travel
-            )
-            (?:/\S*?)?       # whatever / + non-space that follow mail.ru (/abc?def&ghi)
+    # url must be preceded by a space, a ( or a start of the string
+    (?:(?<=\s|\()|(?<=^))
+
+    # http:// or www
+    (?:https?://|www\.)
+
+    # optional user:pass at
+    (?:\S+(?::\S*)?@)?
+
+    (?:
+        # ip address (+ some exceptions)
+        (?!10(?:\.\d{1,3}){3})
+        (?!127(?:\.\d{1,3}){3})
+        (?!169\.254(?:\.\d{1,3}){2})
+        (?!192\.168(?:\.\d{1,3}){2})
+        (?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})
+
+        (?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])
+        (?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}
+        (?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))
+    |
+        # domain name (a.b.c.com)
+        (?:(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)     # a, a-b
+        (?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*  # .c, .c-d
+        (?:\.(?:[a-z\u00a1-\uffff]{2,}))                            # .ru, .com, etc
+    )
+
+    # port?
+    (?::\d{2,5})?
+
+    # / & the rest
+    (?:
+        /
+        (?:
+            # hello(world) in "hello(world))"
+            (?:
+                [^\s(]*
+                \(
+                [^\s)]+
+                \)
+            )+
+            [^\s)]*
+        |
+            # any string (non-greedy!)
+            \S*?
         )
-    [,.)!?:]*(?=\s|$)        # except punctuation and following spaces
+    )?
+
+    # url must be directly followed by:
+    (?=
+        # some possible punctuation
+        # AND space or end of string
+        [,.)!?:]*
+        (?:\s|$)
+    )
     """
 
 re_http = re.compile(str_http, re.X | re.U)

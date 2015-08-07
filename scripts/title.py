@@ -6,16 +6,20 @@ from sqrl3.web import re_http, opener_en, clean
 from lxml import html, etree
 from sqrl3.constants import BotException
 import re
-from bs4 import UnicodeDammit
+import chardet
 from gevent.pool import Group
-import urllib2
+import urllib2, httplib2
+from StringIO import StringIO
+import gzip
 
 ############################################################ triggers
 
 @onload
-def load(self):
+def load(self, yt_key=None):
+    global youtube_key
     self.chans_urls = {}
     self.chans_processors = {}
+    youtube_key = yt_key
 
 @onprivmsg("title", onex=u"couldn't fetch the title: {!t}")
 def cmdtitle(self, msg):
@@ -96,9 +100,6 @@ class CantGetContents(BotException):
 class ThereIsNoTitle(BotException):
     pass
 
-class ThereIsNoContentType(BotException):
-    pass
-
 class ThisIsNotHTML(BotException):
     pass
 
@@ -108,6 +109,23 @@ class MeaninglessTitle(BotException):
 #############################################################
 
 x_title = etree.XPath(".//title[1]")
+re_wikiurl = re.compile(r"""^https?://[\w-]+\.(?:m\.)?wikipedia.org""", re.U)
+re_charset = re.compile(r"""<\s*meta[^>]+charset=(?:['"]\s*)?([A-z0-9-_]+)""", re.I)
+
+def getcharset(data):
+    r = re_charset.search(data)
+    if r:
+        return r.group(1)
+    else:
+        confidence, charset = chardet.detect(data[-5000:]).values()
+        if confidence:
+            try:
+                unicode(data, charset)
+                return charset
+            except:
+                pass
+        return "utf-8"
+
 class Title(object):
     """
         this class, and all similar classes, take url and produce the following properties:
@@ -120,15 +138,25 @@ class Title(object):
     def __init__(self, url):
         if not url.startswith("http"):
             url = "http://" + url
+        url = httplib2.iri2uri(url)
+
+        # certain urls are self-explicable
+        if re_wikiurl.match(url):
+            try: assert urllib2.unquote(url.encode("ascii")).decode('utf8') != url
+            except: raise MeaninglessTitle("wikipedia title is within the url")
+
         try: resp = opener_en.open(url.encode("utf-8"), timeout=5)
         except urllib2.URLError as e: raise CantGetContents(e)
-        try: ctype = resp.info()["content-type"]
-        except KeyError: raise ThereIsNoContentType("there's no content-type")
-        if ("/html" not in ctype) and ("/xhtml" not in ctype):
+        info = resp.info()
+        if info.type not in ("text/html", "text/xhtml"):
             raise ThisIsNotHTML("this doesn't look like html")
 
         data = resp.read(262144)
-        encoding = UnicodeDammit(data[:5000], is_html=True).original_encoding or UnicodeDammit(data, is_html=True).original_encoding
+        if info.get('Content-Encoding') == 'gzip':
+            data = gzip.GzipFile(fileobj=StringIO(data)).read()
+
+        encoding = info.getparam("charset") or getcharset(data)
+
         title = x_title(html.fromstring(data, parser=html.HTMLParser(encoding=encoding)))
         if not title:
             raise ThereIsNoTitle(u"there's no title in the first 4⁹ bytes")
@@ -138,35 +166,53 @@ class Title(object):
         title = clean(title)
 
         if title == "imgur: the simple image sharer": raise MeaninglessTitle("who needs the default imgur title?")
+        if title == "Photos" and "core.org.ua" in url: raise MeaninglessTitle(u"рамок снова фотачками хвастается, да?")
         elif title.lower() in url.lower(): raise MeaninglessTitle("title text is contained within the url")
         self.shortargs = self.longargs = (title,)
 
     shorttemplate = longtemplate = "{!q:m}"
 
 
+import json, isodate, datetime
+
 # http://www.youtube.com/watch?v=y71vHIdv5IM
 # http://youtu.be/y71vHIdv5IM
 # http://y2u.be/y71vHIdv5IM
+
+
 re_youtube = re.compile(r"(?:youtube.com/watch\?(?:\S+?&)?v=|y(?:out|2)u.be/)([A-z0-9_-]+)")
-namespaces = {"media": "http://search.yahoo.com/mrss/", "yt": "http://gdata.youtube.com/schemas/2007", "gd": "http://schemas.google.com/g/2005"}
+youtube_api_url = u"https://www.googleapis.com/youtube/v3/videos?id={id}&key={key}&part=snippet,contentDetails,statistics&fields=items(id,snippet(title,localized(description),publishedAt),statistics(viewCount,likeCount,dislikeCount),contentDetails(duration))"
+
 class Youtube(object):
     def __init__(self, url):
+        if youtube_key is None: raise
         id = re_youtube.search(url).group(1)
-        data = urllib2.urlopen("https://gdata.youtube.com/feeds/api/videos/%s?v=2" % id).read()
-        tree = etree.fromstring(data)
+        data = json.load(urllib2.urlopen(youtube_api_url.format(id=id, key=youtube_key)))["items"][0]
+        title = data["snippet"]["title"]
+        try: description = data["snippet"]["localized"]["description"]
+        except: description = ""
+        try:
+            likes = data["statistics"]["likeCount"]
+            dislikes = data["statistics"]["dislikeCount"]
+            rating = num_to_km(int(likes)) + "/" + num_to_km(int(dislikes))
+        except Exception as e:
+            rating = u"—"
+        viewcount = int(data["statistics"].get("viewCount", 0))
+        viewcount = num_to_km(viewcount)
+        try:
+            duration = data["contentDetails"]["duration"]
+            duration = isodate.parse_duration(duration)
+            duration = u"∞" if duration == datetime.timedelta(0) else s_to_ms(duration.total_seconds())
+        except Exception as e:
+            duration = u"∞"
 
-        def first(xpath):
-            return tree.xpath(xpath, namespaces=namespaces)[0]
 
-        title = clean(first(".//media:title").text.splitlines()[0])
-        rating = first(".//gd:rating").attrib["average"][:3]
-        viewcount = first(".//yt:statistics").attrib["viewCount"]
-        duration = s_to_ms(int(first(".//media:content").attrib["duration"]))
+        date = datetime.datetime.strptime(data["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.000Z")
+        date = date_to_readabledate(date)
 
         self.shortargs = (title, duration, rating, viewcount)
-        try: self.longargs = (title, duration, rating, viewcount, clean(first(".//media:description").text.splitlines()[0]))
-        except: self.longtemplate, self.longargs = self.shorttemplate, self.shortargs
-
+        if description: self.longargs = (title, duration, rating, viewcount, clean(description))
+        else: self.longtemplate, self.longargs = self.shorttemplate, self.shortargs
     shorttemplate = "{!q:m} ({}, {}, {})"
     longtemplate = "{!q:m} ({}, {}, {}): {:250R}"
 
@@ -174,3 +220,23 @@ def s_to_ms(s):
     m, s = divmod(s, 60)
     if m: return "%sm%ss" % (m, s)
     else: return "%ss" % s
+
+def num_to_km(n):
+    if n > 1000000:
+        return "{:.0f}m".format(n / 1000000.0)
+    elif n > 1000:
+        return "{:.0f}k".format(n / 1000.0)
+    else:
+        return str(n)
+
+def date_to_readabledate(then):
+    now = datetime.datetime.utcnow()
+    days = (now.date() - then.date()).days
+    if days > 31:
+        return "", then.strftime("%d.%m.%y")
+    elif days == 0:
+        return "today at ", then.strftime("%H:%M") + "Z"
+    elif days == 1:
+        return "yesterday at ", then.strftime("%H:%M") + "Z"
+    else:
+        return days, " days ago"

@@ -189,34 +189,32 @@ class CuteFormatter(Formatter):
             # but we will have to cut the strings
             # start moving stuff from leftovers to result8 at once
             for idx, text8, full_limit, format_spec in leftovers:
-                if we_are_cutting:
-                    # adjust full_limit to max length it can take
-                    limit_with_dots = full_limit * add_length / leftovers8len
-                    if len(text8) > limit_with_dots:
-                        # we need to cut this particular text
-                        # we will have to add dots somewhere, so determine limit without dots now
-                        limit = limit_with_dots - dots8len
-                        if dots8len > limit_with_dots:
-                            add8 = "..."[:limit_with_dots]
-                        elif format_spec in ("r", "R"):
-                            # check if there's a space in the last 20 bytes of the text[:limit]
-                            # if there is, and it's not very far on the let, reduce limit to it
-                            space_idx = text8.rfind(" ", max(0, limit - 20), limit)
-                            if space_idx > dots8len:
-                                limit = space_idx
-                            add8 = text8[:limit].strip() + dots8
-                            if format_spec == "R":
-                                self.more = text8[limit:].strip().decode(encoding, "ignore")
-                        else:
-                            # mode = m
-                            half = limit / 2
-                            add8 = text8[:half].strip() + \
-                                dots8 + \
-                                text8[-half - 1 if limit % 2 else -half:].strip()
+                # adjust full_limit to max length it can take
+                limit_with_dots = min(full_limit * add_length / leftovers8len, full_limit)
+                if len(text8) > limit_with_dots:
+                    # we need to cut this particular text
+                    # we will have to add dots somewhere, so determine limit without dots now
+                    limit = limit_with_dots - dots8len
+                    if dots8len > limit_with_dots:
+                        add8 = "..."[:limit_with_dots]
+                    elif format_spec in ("r", "R"):
+                        # check if there's a space in the last 20 bytes of the text[:limit]
+                        # if there is, and it's not very far on the let, reduce limit to it
+                        space_idx = text8.rfind(" ", max(0, limit - 20), limit)
+                        if space_idx > dots8len:
+                            limit = space_idx
+                        add8 = text8[:limit].strip() + dots8
+                        if format_spec == "R":
+                            self.more = text8[limit:].strip().decode(encoding, "ignore")
                     else:
-                        add8 = text8
+                        # mode = m
+                        half = limit / 2
+                        add8 = text8[:half].strip() + \
+                            dots8 + \
+                            text8[-half - 1 if limit % 2 else -half:].strip()
                 else:
-                    add8 = text8
+                        add8 = text8
+
                 # we have determined the addition to result8
                 # check if it's within the limits and
                 # adjust remaining space & remaining bytes
