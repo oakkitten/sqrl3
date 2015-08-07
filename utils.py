@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-""" provides irc connection abstraction """
+""" various utility functions """
 
 import re
 from StringIO import StringIO
@@ -70,16 +70,15 @@ class CuteFormatter(Formatter):
                    if there's no R, instance.more is set to ""
             {1:15m} - same, except text will not exceed 15 bytes and will be chopped in the middle
             {url!q} - in addition to truncating, put quotes around the text
-                      there's poor man's detection of Russian and Engish, too
+                      there's poor man's detection of Russian and English, too
             {0:tq}  - same, but also attempt to translate that field into
                       language specified by "lang" parameter. uses trans.py
-        the necessity to cut stuff is determined by itilializers:
+        the necessity to cut stuff is determined by initializers:
             maxbytes - the maximum bytes that formatter can output (can output less then maxbytes due to stripping)
-            sortenby (format's keyword parameter) - bytes to cut from maxbytes
             encoding
         target language:
             lang     - defaults to "en" (english)
-        does not raise anything (expect some Unicode errors if you pass non-unicode-convertable stuff)
+        does not raise anything (expect some Unicode errors if you pass non-unicode-convertible stuff)
         pretty slow! :<
     """
     def __init__(self, maxbytes=510, encoding="utf-8"):
@@ -90,6 +89,13 @@ class CuteFormatter(Formatter):
         self.quotesen, self.quotesru, self.quotesjp = (tuple(quote.encode(encoding) for quote in pair)
                                                        for pair in ((u"“", u"”"), (u"«", u"»"), (u"「", u"」")))
         self.more = ""
+
+    def translate_format_string(self, format_string, *args, **kwargs):
+        lang = kwargs["lang"] if "lang" in kwargs else "en"
+        if lang not in FORMAT_STRING_TRANSLATIONS:
+            return format_string
+        else:
+            return FORMAT_STRING_TRANSLATIONS[lang].get(format_string, format_string)
 
     def vformat(self, format_string, args, kwargs):
         # result8 = [
@@ -104,17 +110,12 @@ class CuteFormatter(Formatter):
         # ]]
         maxbytes, encoding, dots8, dots8len = self.maxbytes, self.encoding, self.dots8, self.dots8len
         quotesru, quotesjp, quotesen = self.quotesru, self.quotesjp, self.quotesen
-        if "shortenby" in kwargs:
-            maxbytes -= kwargs["shortenby"]
 
         # deal with translations
         lang = kwargs["lang"] if "lang" in kwargs else "en"
         if lang not in FORMAT_STRING_TRANSLATIONS:
             translate = lambda x: x
         else:
-            # translate the “main” string
-            try: format_string = FORMAT_STRING_TRANSLATIONS[lang][format_string]
-            except KeyError: pass
             # define translation function to be used later for arguments
             arg_trans = ARGUMENT_TRANSLATIONS[lang]
             def translate(value):
@@ -152,7 +153,7 @@ class CuteFormatter(Formatter):
                     text = translate(text)
                 if format_spec and format_spec[-1] in ("r", "m", "R"):
                     # this field is r / R / m
-                    # find out the limit, conver and retreive quotes as needed
+                    # find out the limit, convert and retrieve quotes as needed
                     # append quotes and None to result8
                     # and append according record to leftovers
                     try: limit = int(format_spec[:-1]) or _inf
@@ -218,7 +219,7 @@ class CuteFormatter(Formatter):
                     add8 = text8
                 # we have determined the addition to result8
                 # check if it's within the limits and
-                # adjust remaining space & remaning bytes
+                # adjust remaining space & remaining bytes
                 assert len(add8) <= full_limit
                 add_length -= len(add8)
                 leftovers8len -= full_limit
