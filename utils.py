@@ -184,8 +184,6 @@ class CuteFormatter(Formatter):
             leftovers8len = sum(item[2] for item in leftovers)
             add_length = max(maxbytes - result8len, 0)
             # we have space left, so we can add some bytes
-            # determine if we will have to cut
-            we_are_cutting = result8len + leftovers8len > maxbytes
             # but we will have to cut the strings
             # start moving stuff from leftovers to result8 at once
             for idx, text8, full_limit, format_spec in leftovers:
