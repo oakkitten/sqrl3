@@ -50,6 +50,10 @@ ARGUMENT_TRANSLATIONS = {
         # ignore
 
         # title
+        u"today at ": u"сегодня в ",
+        u"yesterday at ": u"вчера в ",
+        u" days ago": u" дней назад",
+
         u"there's no content-type": u"нема content-type",
         u"title is present but empty": u"заголов есть, вот только пустой",
         u"this doesn't look like html": u"непохоже на хетемеел",

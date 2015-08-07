@@ -71,7 +71,7 @@ class CuteFormatter(Formatter):
             {1:15m} - same, except text will not exceed 15 bytes and will be chopped in the middle
             {url!q} - in addition to truncating, put quotes around the text
                       there's poor man's detection of Russian and English, too
-            {0:tq}  - same, but also attempt to translate that field into
+            {0!tq}  - same, but also attempt to translate that field into
                       language specified by "lang" parameter. uses trans.py
         the necessity to cut stuff is determined by initializers:
             maxbytes - the maximum bytes that formatter can output (can output less then maxbytes due to stripping)

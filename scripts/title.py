@@ -59,7 +59,7 @@ def autotitle(self, msg, announce_title=True):
                         else:
                             temps.append(u"…")
                     if args:
-                        msg.ireply(u"↑ " + ", ".join(temps), *args)
+                        msg.ireply(u"↑↑ " + ", ".join(temps), *args)
 
 ############################################################ processor
 
@@ -210,16 +210,16 @@ class Youtube(object):
         date = datetime.datetime.strptime(data["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.000Z")
         date = date_to_readabledate(date)
 
-        self.shortargs = (title, duration, rating, viewcount)
-        if description: self.longargs = (title, duration, rating, viewcount, clean(description))
+        self.shortargs = (title, duration, rating, viewcount, date[0], date[1])
+        if description: self.longargs = (title, duration, rating, viewcount, date[0], date[1], clean(description))
         else: self.longtemplate, self.longargs = self.shorttemplate, self.shortargs
-    shorttemplate = "{!q:m} ({}, {}, {})"
-    longtemplate = "{!q:m} ({}, {}, {}): {:250R}"
+    shorttemplate = "{!q:m} ({}, {}, {}, {!t}{})"
+    longtemplate = "{!q:m} ({}, {}, {}, {!t}{}): {:250R}"
 
 def s_to_ms(s):
     m, s = divmod(s, 60)
-    if m: return "%sm%ss" % (m, s)
-    else: return "%ss" % s
+    if m: return "%dm%ds" % (m, s)
+    else: return "%ds" % s
 
 def num_to_km(n):
     if n > 1000000:
@@ -235,8 +235,8 @@ def date_to_readabledate(then):
     if days > 31:
         return "", then.strftime("%d.%m.%y")
     elif days == 0:
-        return "today at ", then.strftime("%H:%M") + "Z"
+        return u"today at ", then.strftime("%H:%M") + "Z"
     elif days == 1:
-        return "yesterday at ", then.strftime("%H:%M") + "Z"
+        return u"yesterday at ", then.strftime("%H:%M") + "Z"
     else:
-        return days, " days ago"
+        return days, u" days ago"
