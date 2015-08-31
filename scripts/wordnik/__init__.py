@@ -5,7 +5,7 @@
 
 from ...script import onload, onprivmsg
 from ...constants import ResultNotFound
-from .wordnik import initialize, definition, suggestions
+from .wordnik import Wordnik
 from gdshortener import ISGDShortener
 from urllib2 import quote
 
@@ -15,7 +15,7 @@ isgd = ISGDShortener()
 
 @onload
 def load(self, wordnik_key):
-    initialize(wordnik_key)
+    self.wordnik = Wordnik(wordnik_key)
 
 
 @onprivmsg("define", "d")
@@ -23,10 +23,10 @@ def privmsg(self, msg):
     """ returns wordnik word definition or suggestions"""
     word = msg[:]
 
-    try: d = definition(word)
+    try: d = self.wordnik.definition(word)
     except ResultNotFound: d = None
 
-    try: s = ', '.join(suggestions(word))
+    try: s = ', '.join(self.wordnik.suggestions(word))
     except ResultNotFound: s = None
 
     if d: fmt = u"{d:R} — {u} — did you mean {s}?" if s else u"{d:R} — {u}"

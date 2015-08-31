@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from ...constants import ResultNotFound
-from .wordnik import initialize, definition, suggestions
+from .wordnik import Wordnik
 import argparse
 
 parser = argparse.ArgumentParser(description="wordnik fetcher", prog="wordnik")
@@ -12,10 +12,10 @@ args = parser.parse_args()
 key = args.key
 word = " ".join(args.expression)
 
-initialize(args.key)
-try: print definition(word)
+w = Wordnik(args.key)
+try: print w.definition(word)
 except ResultNotFound: print "definition not found"
 
-try: print "suggestions:", ', '.join(suggestions(word))
+try: print "suggestions:", ', '.join(w.suggestions(word))
 except ResultNotFound: print "no suggestions"
 
