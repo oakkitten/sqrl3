@@ -9,6 +9,25 @@ from trans import FORMAT_STRING_TRANSLATIONS, ARGUMENT_TRANSLATIONS
 
 ################################################################
 
+_re_spaces = re.compile(r"[\s\r\n]+")
+def clean(text):
+    """
+        strips text of newlines and various punctuation mistakes
+    """
+    return _re_spaces.sub(" ", text).strip().replace(" ;", ";").replace(" :", ":").replace(".;", ".").replace("( ", "(").replace(" ,", ",")
+
+def num_to_km(n):
+    """
+        convert "1000" to "1k" and "2000000" to "2m"
+    """
+    n = int(n)
+    if n > 1000000:
+        return "{:.0f}m".format(n / 1000000.0)
+    elif n > 1000:
+        return "{:.0f}k".format(n / 1000.0)
+    else:
+        return str(n)
+
 def first_line(string):
     """
         get first line of a string, stripped

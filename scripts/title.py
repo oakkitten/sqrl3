@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from sqrl3.script import onprivmsg, onload
-from sqrl3.web import re_http, opener_en, clean
+from sqrl3.web import re_http, opener_en
+from sqrl3.utils import clean
 from lxml import html, etree
 from sqrl3.constants import BotException
 import re

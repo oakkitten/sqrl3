@@ -58,3 +58,11 @@ class HaltMessage(BotException):
 
 class MuteMessage(BotException):
     """ raise when a greenlet wants to mute other scripts, that is, prevent them from using msg.reply """
+
+########################################################################################## general stuff
+
+class ResultNotFound(BotException):
+    """ raised when database query was processed successfully but no item was found """
+
+class ResultNotUnderstood(BotException):
+    """ raised when database query was not processed successfully """

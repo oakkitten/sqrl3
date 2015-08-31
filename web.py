@@ -44,7 +44,7 @@ str_http = ur"""
 
     # / & the rest
     (?:
-        /
+        \.?/
         (?:
             # hello(world) in "hello(world))"
             (?:
@@ -70,7 +70,6 @@ str_http = ur"""
     """
 
 re_http = re.compile(str_http, re.X | re.U)
-re_spaces = re.compile("\s+")
 
 ############################################################ openers
 
@@ -88,12 +87,3 @@ opener_en.addheaders = [
 opener_ru = urllib2.build_opener()
 opener_ru.addheaders = copy.copy(opener_en.addheaders)
 opener_ru.addheaders[2] = (opener_ru.addheaders[2][0], "ru;q=0.8,en;q=0.6")
-
-############################################################ openers
-
-def clean(string):
-    """
-        return string without spaces on start and end
-        also, compresses multiple spaces & \ns into one space
-    """
-    return re_spaces.sub(" ", string).strip()
